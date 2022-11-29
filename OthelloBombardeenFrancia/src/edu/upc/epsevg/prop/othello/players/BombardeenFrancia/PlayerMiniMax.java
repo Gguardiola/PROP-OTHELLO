@@ -11,7 +11,7 @@ import edu.upc.epsevg.prop.othello.Move;
 
 /**
  *
- * @author USUARIO
+ * @author BOMBARDEENFRANCIA
  */
 public class PlayerMiniMax implements IPlayer, IAuto{
 
