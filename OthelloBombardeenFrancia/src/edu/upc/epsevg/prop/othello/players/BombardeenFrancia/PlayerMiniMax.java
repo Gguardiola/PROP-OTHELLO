@@ -4,12 +4,14 @@
  */
 package edu.upc.epsevg.prop.othello.players.BombardeenFrancia;
 
+import edu.upc.epsevg.prop.othello.CellType;
 import edu.upc.epsevg.prop.othello.GameStatus;
 import edu.upc.epsevg.prop.othello.IAuto;
 import edu.upc.epsevg.prop.othello.IPlayer;
 import edu.upc.epsevg.prop.othello.Move;
 import edu.upc.epsevg.prop.othello.SearchType;
 import java.awt.Point;
+import java.util.ArrayList;
 
 /**
  *
@@ -17,139 +19,133 @@ import java.awt.Point;
  */
 public class PlayerMiniMax implements IPlayer, IAuto{
 
-    /**
-     * @param args the command line arguments
-     */
     private String name = "Hakimi";
-    private GameStatus s;
-    private float maxGB;
-    private int depth;
+    private int _depth;
     private long numNodes;
     private int _poda;
+    private CellType BF;
+    private CellType rival;
     
-    public PlayerMiniMax(float f){
-    
-        this.maxGB = f;
+    private int[][] tablaPosibilidades = {
+        { 120, -20, 20,  5,  5, 20, -20, 120},
+        { -20, -40, -5, -5, -5, -5, -40, -20},
+        {  20,  -5, 15,  3,  3, 15,  -5,  20},
+        {   5,  -5,  3,  3,  3,  3,  -5,   5},
+        {   5,  -5,  3,  3,  3,  3,  -5,   5},
+        {  20,  -5, 15,  3,  3, 15,  -5,  20},
+        { -20, -40, -5, -5, -5, -5, -40, -20},
+        { 120, -20, 20,  5,  5, 20, -20, 120}
+    };
+      
+    public PlayerMiniMax(int i){
         _poda = 0;
-    
+        _depth = i;
+        numNodes = 0;
     }
     
     
-    public static void main(String args[])  {
-        //llamamos minimax
-        
-    }
-
     @Override
     public Move move(GameStatus gs) {
-       Move resultatMove = minimax(gs);
-      
+       BF = gs.getCurrentPlayer();
+       rival = CellType.opposite(BF);
+       Move resultatMove = minimax(gs, _depth);
        return resultatMove;
     }
 
     @Override
     public void timeout() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Nothing to do! I'm so fast, I never timeout 8-)
     }
 
     @Override
     public String getName() {
-        return "Minimax(" + name + ")";
+        return name;
     }
     
     //////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////|- MINIMAX -|/////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
     
-    public Move minimax(GameStatus t){
-        int valor = Integer.MIN_VALUE, col = 0, fil = 0;
-        for (int i = 0; i < t.getSize(); i++){
-            for (int j = 0; j < t.getSize(); j++){
-                Point newPos = new Point(i,j);
-                
-                if(t.canMove(newPos, t.getPos(i,j))){
-                    GameStatus newT = new GameStatus(t);
-                    newT.movePiece(newPos);
-                    //Vamos al nodo MIN             //alpha             beta
-                    depth++;
-                    int newV = MIN(newT, Integer.MIN_VALUE, Integer.MAX_VALUE);
-                    if(newV > valor){
-                        valor = newV;
-                        col = i;
-                        fil = j;
-                    }
-                }            
-            }           
-        }  
+    public Move minimax(GameStatus t, int depth){
+        int valor = Integer.MIN_VALUE;
+        System.out.println("lol");
+        Point RES = null;
+        ArrayList<Point> ap = t.getMoves();
+        for (Point p : ap) {
+            GameStatus newT = new GameStatus(t);
+            newT.movePiece(p);
+            //Vamos al nodo MIN             //alpha             beta
+            int newV = MIN(newT, depth-1, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            if(newV > valor){
+                valor = newV;
+                RES = new Point(p);
+            }   
+        }
         
         //Transformación minimax a tipo Move
-        
-        Point colfil = new Point(col,fil);
-        
-        System.out.println("COLFIL: "+colfil);
-          
-        return new Move( colfil, 0L, 0, SearchType.MINIMAX);    
+        return new Move(RES , numNodes, _depth, SearchType.MINIMAX);    
     }
 
-    public int MAX(GameStatus t, int alpha, int beta){
+    public int MAX(GameStatus t, int depth, int alpha, int beta){
         //Caso base
-        if (depth == 10 || t.checkGameOver()){
+        if (depth == 0 || t.getEmptyCellsCount() == 0){
             return Heuristica(t);
         }
-        for(int i = 0; i < t.getSize(); i++){
-            for(int j = 0; j < t.getSize(); j++){
-                Point newPos = new Point(i,j);
-                
-                if(t.canMove(newPos, t.getPos(i,j))){
-                    GameStatus newT = new GameStatus(t);
-                    newT.movePiece(newPos);
-                    //Si gana, return
-                    if(newT.isGameOver()) return Integer.MAX_VALUE;
-                    //if(newT.solucio(i, _myf*-1)) return Integer.MIN_VALUE;
-                    //Vamos al MIN
-                    depth++;
-                    int value = MIN(newT, alpha, beta);
-                    alpha = Math.max(value, alpha);
-                    //Hacemos poda alpha-beta
-                    if(alpha >= beta){
-                        //System.out.println("SE ROMPE");
-                        _poda++;
-                        break;
-                    }
-                 }
+        
+        ArrayList<Point> ap = t.getMoves();
+        for (Point p : ap) {
+            GameStatus newT = new GameStatus(t);
+            newT.movePiece(p);
+            //Vamos al MIN
+            int value = MIN(newT, depth-1, alpha, beta);
+            alpha = Math.max(value, alpha);
+            //Hacemos poda alpha-beta
+            if(alpha >= beta){
+                _poda++;
+                break;
             }
         }
+        
+        
         return alpha;
     }
 
 
-    public int MIN(GameStatus t, int alpha, int beta){
+    public int MIN(GameStatus t, int depth, int alpha, int beta){
         //Caso base
-        if (depth == 10 || t.checkGameOver()){
+        if (depth == 0 || t.getEmptyCellsCount() == 0){
             return Heuristica(t);
         }
-        for(int i = 0; i < t.getSize(); i++){
-            for(int j = 0; j < t.getSize(); j++){
-                Point newPos = new Point(i,j);
-                
-                if(t.canMove(newPos, t.getPos(i,j))){
-                    GameStatus newT = new GameStatus(t);
-                    newT.movePiece(newPos);
-                    //if(newT.solucio(i, _myf)) return Integer.MAX_VALUE;
-                    if(newT.solucio(i, _myf*-1))  return Integer.MIN_VALUE;
-                    //Vamos al MAX
-                    depth++;
-                    int value = MAX(newT, alpha, beta);
-                    beta = Math.min(value, beta);
-                    //Hacemos poda alpha-beta
-                    if(alpha >= beta){
-                        //System.out.println("SE ROMPE");
-                        _poda++;
-                        break;
-                    }
-                }            
+        
+        ArrayList<Point> ap = t.getMoves();
+        for (Point p : ap) {
+            GameStatus newT = new GameStatus(t);
+            newT.movePiece(p);
+            //Vamos al MAX
+            int value = MAX(newT, depth-1, alpha, beta);
+            beta = Math.min(value, beta);
+            //Hacemos poda alpha-beta
+            if(alpha >= beta){
+                _poda++;
+                break;
             }
         }
+        
         return beta;
+    }
+    
+    public int Heuristica(GameStatus t){
+        numNodes = numNodes + 1;
+        int valorHeur = 0;
+        for (int i = 0; i < t.getSize(); i++) {
+            for (int j = 0; j < t.getSize(); j++) {
+                if (t.getPos(i, j) == BF) {
+                    valorHeur += tablaPosibilidades[i][j];
+                } else if (t.getPos(i, j) == rival) {
+                    valorHeur -= tablaPosibilidades[i][j];
+                }
+            }
+        }
+        return valorHeur;
     }
 }
