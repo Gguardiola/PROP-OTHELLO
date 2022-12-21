@@ -11,7 +11,10 @@ import edu.upc.epsevg.prop.othello.IPlayer;
 import edu.upc.epsevg.prop.othello.Move;
 import edu.upc.epsevg.prop.othello.SearchType;
 import java.awt.Point;
+import java.util.Random;
 import java.util.ArrayList;
+import java.util.HashMap;
+
 
 /**
  *
@@ -22,11 +25,14 @@ public class PlayerID implements IPlayer, IAuto{
     private String name = "Hakimi";
     private int _depth;
     private long numNodes;
+    private long numHash;
+    private long incorrectos;
     private int _poda;
     private CellType BF;
     private CellType rival;
     private boolean RTO = false;
-    
+    private long[][][] zobristTable = new long[8][8][2];
+    HashMap<Long, Integer> test;
     private int[][] tablaPosibilidades = {
         { 120, -20, 20,  5,  5, 20, -20, 120},
         { -20, -40, -5, -5, -5, -5, -40, -20},
@@ -37,17 +43,39 @@ public class PlayerID implements IPlayer, IAuto{
         { -20, -40, -5, -5, -5, -5, -40, -20},
         { 120, -20, 20,  5,  5, 20, -20, 120}
     };
+    /*
+    private int[][] tablaPosibilidades = {
+        {4, -3,  2,  2,  2,  2, -3,  4},
+        {-3, -4, -1, -1, -1, -1, -4, -3},
+        { 2, -1,  1,  0,  0,  1, -1,  2},
+        { 2, -1,  0,  1,  1,  0, -1,  2},
+        { 2, -1,  0,  1,  1,  0, -1,  2},
+        { 2, -1,  1,  0,  0,  1, -1,  2},
+        {-3, -4, -1, -1, -1, -1, -4, -3},
+        { 4, -3,  2,  2,  2,  2, -3,  4}
+    };*/
       
     public PlayerID(){
         _poda = 0;
         _depth = 0;
         numNodes = 0;
+        numHash = 0;
+        Random random = new Random();
+        for (int i = 0; i < 8; i++){//Amplada tablero
+            for (int j = 0; j < 8; j++){//Altura tablero
+              for (int k = 0; k < 2; k++){//Fichas 
+                zobristTable[i][j][k] = random.nextLong();
+              }
+            }
+          }
+        test = new HashMap<>();
     }
     
     
     @Override
     public Move move(GameStatus gs) {
        numNodes = 0;
+       numHash = 0;
        BF = gs.getCurrentPlayer();
        rival = CellType.opposite(BF);
        RTO = false;
@@ -57,8 +85,10 @@ public class PlayerID implements IPlayer, IAuto{
            _depth = prof;
            resultatMove = minimax(gs, prof, resultatMove);
            prof++;
-           // 1 2 3 4 5 6
        }
+       System.out.println("numNodes " + numNodes);
+       System.out.println("numHash " + numHash);
+        System.out.println("incorrectos " + incorrectos);
        return resultatMove;
     }
 
@@ -101,9 +131,29 @@ public class PlayerID implements IPlayer, IAuto{
 
     public Integer MAX(GameStatus t, int depth, int alpha, int beta){
         if(RTO) return null;
+        if(t.checkGameOver()){
+            CellType win = t.GetWinner();
+            if(win == BF){
+                return 1000;
+            }else if(win == rival){
+                return -1000;
+            }
+        }
         //Caso base
         if (depth == 0 || t.getEmptyCellsCount() == 0){
-            return Heuristica(t);
+            numNodes = numNodes + 1;
+            long hashvalue = getZobristHash(t);
+            if(test.containsKey(hashvalue)){
+                numHash++;
+                //int h = Heuristica(t);
+                //if(h != test.get(hashvalue))    incorrectos++;
+                return test.get(hashvalue);
+            }else{
+                int h = Heuristica(t);
+                test.put(hashvalue, h);
+                return h;
+            }
+            //return Heuristica(t);
         }
         
         ArrayList<Point> ap = t.getMoves();
@@ -123,12 +173,31 @@ public class PlayerID implements IPlayer, IAuto{
         return alpha;
     }
 
-
     public Integer MIN(GameStatus t, int depth, int alpha, int beta){
         if(RTO) return null;
+        if(t.checkGameOver()){
+            CellType win = t.GetWinner();
+            if(win == BF){
+                return 1000;
+            }else if(win == rival){
+                return -1000;
+            }
+        }
         //Caso base
         if (depth == 0 || t.getEmptyCellsCount() == 0){
-            return Heuristica(t);
+            numNodes = numNodes + 1;
+            long hashvalue = getZobristHash(t);
+            if(test.containsKey(hashvalue)){
+                numHash++;
+//                int h = Heuristica(t);
+//                if(h != test.get(hashvalue))    incorrectos++;
+                return test.get(hashvalue);
+            }else{
+                int h = Heuristica(t);
+                test.put(hashvalue, h);
+                return h;
+            }
+            //return Heuristica(t);
         }
         
         ArrayList<Point> ap = t.getMoves();
@@ -150,7 +219,6 @@ public class PlayerID implements IPlayer, IAuto{
     }
     
     public int Heuristica(GameStatus t){
-        numNodes = numNodes + 1;
         int valorHeur = 0;
         for (int i = 0; i < t.getSize(); i++) {
             for (int j = 0; j < t.getSize(); j++) {
@@ -163,4 +231,24 @@ public class PlayerID implements IPlayer, IAuto{
         }
         return valorHeur;
     }
+    
+    public long getZobristHash(GameStatus t) {
+        long hash = 0;
+        for(int i = 0; i < t.getSize(); i++){
+            for(int j = 0; j < t.getSize(); j++){
+                CellType piece = t.getPos(i, j);
+                int k;
+                if(piece == CellType.PLAYER1){
+                    k = 0;
+                }else if(piece == CellType.PLAYER2){
+                    k = 1;
+                }else{
+                    k = -1;
+                }
+                if(k != -1) hash ^= zobristTable[i][j][k];
+            }
+        }
+        return hash;
+    }
+
 }

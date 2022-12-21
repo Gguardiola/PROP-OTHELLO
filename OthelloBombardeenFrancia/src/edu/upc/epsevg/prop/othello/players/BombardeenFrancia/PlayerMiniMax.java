@@ -36,6 +36,18 @@ public class PlayerMiniMax implements IPlayer, IAuto{
         { -20, -40, -5, -5, -5, -5, -40, -20},
         { 120, -20, 20,  5,  5, 20, -20, 120}
     };
+    /*
+    private int[][] tablaPosibilidades = {
+        {4, -3,  2,  2,  2,  2, -3,  4},
+        {-3, -4, -1, -1, -1, -1, -4, -3},
+        { 2, -1,  1,  0,  0,  1, -1,  2},
+        { 2, -1,  0,  1,  1,  0, -1,  2},
+        { 2, -1,  0,  1,  1,  0, -1,  2},
+        { 2, -1,  1,  0,  0,  1, -1,  2},
+        {-3, -4, -1, -1, -1, -1, -4, -3},
+        { 4, -3,  2,  2,  2,  2, -3,  4}
+    };*/
+    
       
     public PlayerMiniMax(int i){
         _poda = 0;
@@ -46,6 +58,7 @@ public class PlayerMiniMax implements IPlayer, IAuto{
     
     @Override
     public Move move(GameStatus gs) {
+       numNodes = 0;
        BF = gs.getCurrentPlayer();
        rival = CellType.opposite(BF);
        Move resultatMove = minimax(gs, _depth);
@@ -68,22 +81,21 @@ public class PlayerMiniMax implements IPlayer, IAuto{
     
     public Move minimax(GameStatus t, int depth){
         int valor = Integer.MIN_VALUE;
-        System.out.println("lol");
-        Point RES = null;
+        //System.out.println("lol");
         ArrayList<Point> ap = t.getMoves();
-        for (Point p : ap) {
+        Move RES = new Move(ap.get(0), 0, 0, SearchType.MINIMAX); //Si no ponemos .get(0), en algun caso falla y NO DEBERÍA
+        for (Point p : ap){
             GameStatus newT = new GameStatus(t);
             newT.movePiece(p);
             //Vamos al nodo MIN             //alpha             beta
             int newV = MIN(newT, depth-1, Integer.MIN_VALUE, Integer.MAX_VALUE);
             if(newV > valor){
                 valor = newV;
-                RES = new Point(p);
-            }   
+                RES = new Move(p , numNodes, _depth, SearchType.MINIMAX);
+            }
         }
-        
         //Transformación minimax a tipo Move
-        return new Move(RES , numNodes, _depth, SearchType.MINIMAX);    
+        return RES;
     }
 
     public int MAX(GameStatus t, int depth, int alpha, int beta){
@@ -105,8 +117,6 @@ public class PlayerMiniMax implements IPlayer, IAuto{
                 break;
             }
         }
-        
-        
         return alpha;
     }
 
