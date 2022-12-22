@@ -22,18 +22,15 @@ import java.util.HashMap;
  */
 public class PlayerID implements IPlayer, IAuto{
 
-    private String name = "Hakimi";
-    private int _depth;
-    private long numNodes;
-    private long numHash;
-    private long incorrectos;
-    private int _poda;
-    private CellType BF;
-    private CellType rival;
-    private boolean RTO = false;
     private long[][][] zobristTable = new long[8][8][2];
-    HashMap<Long, Integer> test;
-    private int[][] tablaPosibilidades = {
+    private String name = "Hakimi";
+    private boolean RTO = false;
+    HashMap<Long, Integer> Hash;
+    private CellType BF, rival;
+    private long numNodes;
+    private int _depth; 
+    
+    /*private int[][] tablaPosibilidades = {
         { 120, -20, 20,  5,  5, 20, -20, 120},
         { -20, -40, -5, -5, -5, -5, -40, -20},
         {  20,  -5, 15,  3,  3, 15,  -5,  20},
@@ -42,10 +39,10 @@ public class PlayerID implements IPlayer, IAuto{
         {  20,  -5, 15,  3,  3, 15,  -5,  20},
         { -20, -40, -5, -5, -5, -5, -40, -20},
         { 120, -20, 20,  5,  5, 20, -20, 120}
-    };
-    /*
+    };*/
+    
     private int[][] tablaPosibilidades = {
-        {4, -3,  2,  2,  2,  2, -3,  4},
+        { 4, -3,  2,  2,  2,  2, -3,  4},
         {-3, -4, -1, -1, -1, -1, -4, -3},
         { 2, -1,  1,  0,  0,  1, -1,  2},
         { 2, -1,  0,  1,  1,  0, -1,  2},
@@ -53,13 +50,11 @@ public class PlayerID implements IPlayer, IAuto{
         { 2, -1,  1,  0,  0,  1, -1,  2},
         {-3, -4, -1, -1, -1, -1, -4, -3},
         { 4, -3,  2,  2,  2,  2, -3,  4}
-    };*/
+    };
       
     public PlayerID(){
-        _poda = 0;
-        _depth = 0;
         numNodes = 0;
-        numHash = 0;
+        _depth = 0;
         Random random = new Random();
         for (int i = 0; i < 8; i++){//Amplada tablero
             for (int j = 0; j < 8; j++){//Altura tablero
@@ -68,27 +63,22 @@ public class PlayerID implements IPlayer, IAuto{
               }
             }
           }
-        test = new HashMap<>();
+        Hash = new HashMap<>();
     }
     
-    
     @Override
-    public Move move(GameStatus gs) {
-       numNodes = 0;
-       numHash = 0;
+    public Move move(GameStatus gs){
        BF = gs.getCurrentPlayer();
        rival = CellType.opposite(BF);
-       RTO = false;
-       int prof = 1;
        Move resultatMove = null;
+       numNodes = 0;
+       int prof = 1;
+       RTO = false;
        while(!RTO){ // PERROR. true
            _depth = prof;
            resultatMove = minimax(gs, prof, resultatMove);
            prof++;
        }
-       System.out.println("numNodes " + numNodes);
-       System.out.println("numHash " + numHash);
-        System.out.println("incorrectos " + incorrectos);
        return resultatMove;
     }
 
@@ -115,22 +105,24 @@ public class PlayerID implements IPlayer, IAuto{
             newT.movePiece(p);
             //Vamos al nodo MIN             //alpha             beta
             Integer newV = MIN(newT, depth-1, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            //Si está en null, se ha quedado en mitad de alguna amplada
             if(newV == null){
                 --_depth;
                 return lastres;
             }
+            //Mejor movimiento
             if(newV > valor){
                 valor = newV;
                 RES = new Move(p , numNodes, _depth, SearchType.MINIMAX);
             }   
         }
-        
-        //Transformación minimax a tipo Move
         return RES;    
     }
 
     public Integer MAX(GameStatus t, int depth, int alpha, int beta){
+        //Si el tiempo se acaba antes de finalizar la amplada, return null
         if(RTO) return null;
+        //Se acaba la partida
         if(t.checkGameOver()){
             CellType win = t.GetWinner();
             if(win == BF){
@@ -143,30 +135,26 @@ public class PlayerID implements IPlayer, IAuto{
         if (depth == 0 || t.getEmptyCellsCount() == 0){
             numNodes = numNodes + 1;
             long hashvalue = getZobristHash(t);
-            if(test.containsKey(hashvalue)){
-                numHash++;
-                //int h = Heuristica(t);
-                //if(h != test.get(hashvalue))    incorrectos++;
-                return test.get(hashvalue);
-            }else{
+            if(Hash.containsKey(hashvalue)){    //Tablero repetido, return Hash
+                return Hash.get(hashvalue);
+            }else{                              //Nuevo tablero, return heuristica
                 int h = Heuristica(t);
-                test.put(hashvalue, h);
+                Hash.put(hashvalue, h);
                 return h;
             }
-            //return Heuristica(t);
         }
-        
+        //Lista de movimientos
         ArrayList<Point> ap = t.getMoves();
         for (Point p : ap) {
             GameStatus newT = new GameStatus(t);
             newT.movePiece(p);
             //Vamos al MIN
             Integer value = MIN(newT, depth-1, alpha, beta);
+            //Si el tiempo se acaba antes de finalizar la amplada, return null
             if(value == null) return null;
             alpha = Math.max(value, alpha);
             //Hacemos poda alpha-beta
             if(alpha >= beta){
-                _poda++;
                 break;
             }
         }
@@ -174,7 +162,9 @@ public class PlayerID implements IPlayer, IAuto{
     }
 
     public Integer MIN(GameStatus t, int depth, int alpha, int beta){
+        //Si el tiempo se acaba antes de finalizar la amplada, return null
         if(RTO) return null;
+        //Se acaba la partida
         if(t.checkGameOver()){
             CellType win = t.GetWinner();
             if(win == BF){
@@ -187,34 +177,29 @@ public class PlayerID implements IPlayer, IAuto{
         if (depth == 0 || t.getEmptyCellsCount() == 0){
             numNodes = numNodes + 1;
             long hashvalue = getZobristHash(t);
-            if(test.containsKey(hashvalue)){
-                numHash++;
-//                int h = Heuristica(t);
-//                if(h != test.get(hashvalue))    incorrectos++;
-                return test.get(hashvalue);
+            if(Hash.containsKey(hashvalue)){
+                return Hash.get(hashvalue);
             }else{
                 int h = Heuristica(t);
-                test.put(hashvalue, h);
+                Hash.put(hashvalue, h);
                 return h;
             }
-            //return Heuristica(t);
         }
-        
+        //Lista de movimientos
         ArrayList<Point> ap = t.getMoves();
         for (Point p : ap) {
             GameStatus newT = new GameStatus(t);
             newT.movePiece(p);
             //Vamos al MAX
             Integer value = MAX(newT, depth-1, alpha, beta);
+            //Si el tiempo se acaba antes de finalizar la amplada, return null
             if(value == null) return null;
             beta = Math.min(value, beta);
             //Hacemos poda alpha-beta
             if(alpha >= beta){
-                _poda++;
                 break;
             }
         }
-        
         return beta;
     }
     
