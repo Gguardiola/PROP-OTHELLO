@@ -16,8 +16,8 @@ import java.util.HashMap;
 import java.util.Random;
 
 /**
- *
- * @author BOMBARDEENFRANCIA
+ * Implementació del Jugador parametritzat amb profunditat.
+ * @author Àlex y Gabriel
  */
 public class PlayerMiniMax implements IPlayer, IAuto{
 
@@ -51,7 +51,10 @@ public class PlayerMiniMax implements IPlayer, IAuto{
         { 4, -3,  2,  2,  2,  2, -3,  4}
     };
     
-      
+    /**
+     * Constructora del jugador PlayerMiniMax
+     * @param x Profundidad máxima que puede alcanzar nuestro árbol de búsqueda.
+     */
     public PlayerMiniMax(int x){
         numNodes = 0;
         _depth = x;
@@ -89,7 +92,12 @@ public class PlayerMiniMax implements IPlayer, IAuto{
     //////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////|- MINIMAX -|/////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
-    
+    /**
+     * Función que elige el mejor movimiento donde colocaremos nuestra ficha.
+     * @param t     Tablero actual de la partida.
+     * @param depth Profundiad máxima de nuestro algoritmo.
+     * @return      Devuelve el movimiento óptimo para nuestra ficha.
+     */
     public Move minimax(GameStatus t, int depth){
         int valor = Integer.MIN_VALUE;
         ArrayList<Point> ap = t.getMoves();
@@ -107,7 +115,14 @@ public class PlayerMiniMax implements IPlayer, IAuto{
         }
         return RES;
     }
-
+    /**
+     * Función que devuelve el valor heurístico más grande de los movimientos estudiados.
+     * @param t     Tablero con una nueva ficha en una determinada posición.
+     * @param depth Profundidad restante que le queda por analizar al algoritmo.
+     * @param alpha Valor de α para realizar la poda alfa-beta.
+     * @param beta  Valor de β para realizar la poda alfa-beta.
+     * @return      Devuelve el valor heurístico máximo entre todas las posibilidades comprobadas.
+     */
     public int MAX(GameStatus t, int depth, int alpha, int beta){
         //Se acaba la partida
         if(t.checkGameOver()){
@@ -146,7 +161,14 @@ public class PlayerMiniMax implements IPlayer, IAuto{
         return alpha;
     }
 
-
+    /**
+     * Función que devuelve el valor heurístico más pequeño de los movimientos estudiados.
+     * @param t     Tablero con una nueva ficha en una determinada posición.
+     * @param depth Profundidad restante que le queda por analizar al algoritmo.
+     * @param alpha Valor de α para realizar la poda alfa-beta.
+     * @param beta  Valor de β para realizar la poda alfa-beta.
+     * @return      Devuelve el valor heurístico mínimo entre todas las posibilidades comprobadas.
+     */
     public int MIN(GameStatus t, int depth, int alpha, int beta){
         //Se acaba la partida
         if(t.checkGameOver()){
@@ -184,7 +206,11 @@ public class PlayerMiniMax implements IPlayer, IAuto{
         }
         return beta;
     }
-    
+    /**
+     * Función que calcula el valor Heuristico del tablero.
+     * @param t Tablero actual.
+     * @return  Devuelve el valor de la heurística.
+     */
     public int Heuristica(GameStatus t){
         int valorHeur = 0;
         for (int i = 0; i < t.getSize(); i++) {
@@ -198,7 +224,11 @@ public class PlayerMiniMax implements IPlayer, IAuto{
         }
         return valorHeur;
     }
-    
+    /**
+     * Función que calcula la key del HashMap.
+     * @param t Tablero actual.
+     * @return  Devuelve el valor de la key del HashMap.
+     */
     public long getZobristHash(GameStatus t) {
         long hash = 0;
         for(int i = 0; i < t.getSize(); i++){
